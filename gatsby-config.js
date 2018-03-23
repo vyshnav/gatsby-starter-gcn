@@ -12,10 +12,14 @@ catch (e) {
   }
 }
 
+const contentfulOptions = process.env.NODE_ENV === 'development' ?
+  contentfulConfig.development :
+  contentfulConfig.production
+
 module.exports = {
   plugins: [
     {
-    resolve: 'gatsby-plugin-canonical-urls',
+      resolve: 'gatsby-plugin-canonical-urls',
       options: {
         siteUrl: config.siteUrl,
       },
@@ -23,7 +27,7 @@ module.exports = {
     'gatsby-plugin-styled-components',
     'gatsby-plugin-react-helmet',
     {
-    resolve: `gatsby-transformer-remark`,
+      resolve: `gatsby-transformer-remark`,
       options: {
         plugins: [
           {
@@ -33,12 +37,13 @@ module.exports = {
       },
     },
     {
-    resolve: 'gatsby-source-contentful',
-      options: process.env.NODE_ENV === 'development' ?
-        contentfulConfig.development :
-        contentfulConfig.production
+      resolve: 'gatsby-source-contentful',
+      options: contentfulOptions
     },
-    'contentful-editor',
+    {
+      resolve: 'contentful-editor',
+      options: contentfulOptions
+    },
     'gatsby-plugin-netlify'
   ],
 }

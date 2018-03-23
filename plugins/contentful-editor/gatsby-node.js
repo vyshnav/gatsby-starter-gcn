@@ -1,12 +1,4 @@
-const contentful = require('contentful-management')
-const contentfulConfig = {
-  managementToken: process.env['CONTENTFUL_MANAGEMENT_ACCESS_TOKEN'],
-  spaceId: process.env['SPACE_ID']
-}
-
-const client = contentful.createClient({
-  accessToken: contentfulConfig.managementToken
-})
+const contentful = require('contentful')
 
 const ignoreList = [
   'ContentType',
@@ -16,21 +8,27 @@ const ignoreList = [
 ]
 
 module.exports = {
-  setFieldsOnGraphQLNodeType: async function (data) {
+  setFieldsOnGraphQLNodeType: async function (data, { spaceId, accessToken, host }) {
     const node = data.type
     const isContentfulNode = node.name.toLowerCase().startsWith('contentful')
-
-    const space = await client.getSpace(contentfulConfig.spaceId)
-
+    
     if (!isContentfulNode) {
       return
     }
+
+    const client = contentful.createClient({
+      space: spaceId,
+      accessToken,
+      host
+    })
+
     const entityNodes = node.nodes.filter((node) => {
       return !ignoreList.some((ignored) => node.internal.type.endsWith(ignored))
     })
-
+    
     const ids = entityNodes.map((nodeData) => nodeData.contentful_id)
-    const { items: entries } = await space.getEntries({
+    
+    const { items: entries } = await client.getEntries({
       'sys.id[in]': ids.join(','),
       'select': 'sys.contentType,sys.id'
     })
@@ -38,7 +36,7 @@ module.exports = {
       return entry.sys.contentType.sys.id
     })
 
-    const { items: contentTypes } = await space.getContentTypes({
+    const { items: contentTypes } = await client.getContentTypes({
       'sys.id[in]': ctIds.join(',')
     })
 
@@ -51,8 +49,8 @@ module.exports = {
       entityNode.contentfulEditor = {
         contentTypeId: ct.sys.id,
         entityId: id,
-        spaceId: contentfulConfig.spaceId,
-        fields: ct.toPlainObject().fields
+        spaceId: spaceId,
+        fields: ct.fields
       }
     }
   } 
