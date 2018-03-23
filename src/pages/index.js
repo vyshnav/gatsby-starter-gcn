@@ -6,11 +6,11 @@ import CardList from '../components/CardList'
 import Card from '../components/Card'
 import Container from '../components/Container'
 import PageTitle from '../components/PageTitle'
+import ContentfulEditor from '../components/ContentfulEditor'
 
-const Index = ({data}) =>  {
-
+const Index = ({ data }) =>  {
   const posts = data.allContentfulPost.edges;
-
+  
   return (
     <Container>
       <PageTitle small>
@@ -18,14 +18,15 @@ const Index = ({data}) =>  {
       </PageTitle>
       <CardList>
         {posts.map(({ node: post })=> (
-          <Card
-           key={post.id}
-           slug={post.slug}
-           image={post.heroImage}
-           title={post.title}
-           date={post.publishDate}
-           excerpt={post.body}
-          />
+          <ContentfulEditor contentfulEditor={post.contentfulEditor} entityData={post} key={post.id}>
+            <Card
+            slug={post.slug}
+            image={post.heroImage}
+            title={post.title}
+            date={post.publishDate}
+            excerpt={post.body}
+            />
+          </ContentfulEditor>
         ))}
       </CardList>
     </Container>
@@ -51,6 +52,18 @@ export const query = graphql`
             childMarkdownRemark {
               html
               excerpt(pruneLength: 80)
+              internal {
+                content
+              }
+            }
+          }
+          contentfulEditor {
+            contentTypeId
+            entityId
+            spaceId
+            fields {
+              id
+              type
             }
           }
         }

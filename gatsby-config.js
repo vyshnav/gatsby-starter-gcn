@@ -38,6 +38,7 @@ module.exports = {
         contentfulConfig.development :
         contentfulConfig.production
     },
+    'contentful-editor',
     'gatsby-plugin-netlify'
   ],
 }
