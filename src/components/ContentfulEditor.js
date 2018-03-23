@@ -86,35 +86,36 @@ class EditModal extends React.Component {
     })
   }
 
-  submitChanges = async (event) => {
+  submitChanges = (event) => {
     event.preventDefault()
     this.setState({
       errorMessage: null
     })
 
-    try {
-      const {
-        spaceId,
-        entityId
-      } = this.state.editorConfig
-  
-      const client = contentful.createClient({
-        accessToken: this.state.cmaToken
-      })
-  
-      const space = await client.getSpace(spaceId)
-      const entry = await space.getEntry(entityId)
+
+    const {
+      spaceId,
+      entityId
+    } = this.state.editorConfig
+
+    const client = contentful.createClient({
+      accessToken: this.state.cmaToken
+    })
+
+    client.getSpace(spaceId).then((space) => {
+      return space.getEntry(entityId)
+    }).then((entry) => {
       for (const field of this.state.fieldData) {
         entry.fields[field.id]['en-US'] = field.content
       }
-      const updated = await entry.update()
-      await updated.publish()
-
-    } catch (err) {
+      return entry.update()
+    }).then((updatedEntry) => {
+      return updatedEntry.publish()
+    }).catch((err) => {
       this.setState({
         errorMessage: err.toString()
       })
-    }
+    })
   }
 
   render() {
@@ -164,8 +165,6 @@ class ContentfulEditor extends React.Component {
     this.setState({
       showModal: true
     })
-    console.log('Edit this')
-    console.log(this.props)
   }
 
   closeModal = () => {
@@ -176,7 +175,6 @@ class ContentfulEditor extends React.Component {
 
   render() {
     const { contentfulEditor, children, entityData } = this.props
-    console.log(entityData)
     return (
       <EditOverlay>
         <span className='edit-button'><button onClick={this.editComponent} >Edit</button></span>
