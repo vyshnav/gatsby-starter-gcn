@@ -82,6 +82,8 @@ class EditModal extends React.Component {
       }
     })
 
+    this.closeModal = closeModal
+
     this.state = {
       fieldData,
       editorConfig,
@@ -118,7 +120,11 @@ class EditModal extends React.Component {
       editorConfig
     } = this.state
 
-    saveAndPublish({ cmaToken, fieldData, editorConfig }).catch((err) => {
+    saveAndPublish({ cmaToken, fieldData, editorConfig })
+    .then(() => {
+      this.closeModal()
+    })
+    .catch((err) => {
       this.setState({
         errorMessage: err.toString()
       })
