@@ -161,7 +161,7 @@ class EditModal extends React.Component {
         <button className="close-btn" onClick={closeModal}>Close</button>
         <form>
           {editors}
-          <input placeholder="CMA Token" type="text" value={this.state.cmaToken} onChange={this.setCMAToken}></input>
+          <input placeholder="CMA Token" type="password" value={this.state.cmaToken} onChange={this.setCMAToken}></input>
           <button onClick={this.submitChanges}>Save</button>
         </form>
         {this.state.errorMessage ? this.state.errorMessage : ''}
