@@ -8,6 +8,13 @@ const client = contentful.createClient({
   accessToken: contentfulConfig.managementToken
 })
 
+const ignoreList = [
+  'ContentType',
+  'bodyTextNode',
+  'BodyTextNode',
+  'Asset'
+]
+
 module.exports = {
   setFieldsOnGraphQLNodeType: async function (data) {
     const node = data.type
@@ -15,41 +22,38 @@ module.exports = {
 
     const space = await client.getSpace(contentfulConfig.spaceId)
 
-    if (isContentfulNode) {
-      const entityNodes = node.nodes.filter((node) => {
-        return !node.internal.type.endsWith('ContentType') && 
-          !node.internal.type.endsWith('bodyTextNode') && 
-          !node.internal.type.endsWith('BodyTextNode') &&
-          !node.internal.type.endsWith('Asset')
-      })
-      const removePrefix = (id) => id.substr(1)
-      const ids = entityNodes.map((nodeData) => nodeData.contentful_id)
-      const { items: entries } = await space.getEntries({
-        'sys.id[in]': ids.join(','),
-        'select': 'sys.contentType,sys.id'
-      })
-      const ctIds = entries.map((entry) => {
-        return entry.sys.contentType.sys.id
-      })
+    if (!isContentfulNode) {
+      return
+    }
+    const entityNodes = node.nodes.filter((node) => {
+      return !ignoreList.some((ignored) => node.internal.type.endsWith(ignored))
+    })
 
-      const { items: contentTypes } = await space.getContentTypes({
-        'sys.id[in]': ctIds.join(',')
-      })
+    const ids = entityNodes.map((nodeData) => nodeData.contentful_id)
+    const { items: entries } = await space.getEntries({
+      'sys.id[in]': ids.join(','),
+      'select': 'sys.contentType,sys.id'
+    })
+    const ctIds = entries.map((entry) => {
+      return entry.sys.contentType.sys.id
+    })
 
-      for (const entityNode of entityNodes) {
-        const id = entityNode.contentful_id
-        const entry = entries.find((entry) => entry.sys.id === id)
-        const ctId = entry.sys.contentType.sys.id 
-        const ct = contentTypes.find((ct) => ct.sys.id === ctId)
+    const { items: contentTypes } = await space.getContentTypes({
+      'sys.id[in]': ctIds.join(',')
+    })
 
-        entityNode.contentfulEditor = {
-          contentTypeId: ct.sys.id,
-          entityId: id,
-          spaceId: contentfulConfig.spaceId,
-          fields: ct.toPlainObject().fields
-        }
+    for (const entityNode of entityNodes) {
+      const id = entityNode.contentful_id
+      const entry = entries.find((entry) => entry.sys.id === id)
+      const ctId = entry.sys.contentType.sys.id 
+      const ct = contentTypes.find((ct) => ct.sys.id === ctId)
+
+      entityNode.contentfulEditor = {
+        contentTypeId: ct.sys.id,
+        entityId: id,
+        spaceId: contentfulConfig.spaceId,
+        fields: ct.toPlainObject().fields
       }
-    } 
-   
-  }
+    }
+  } 
 }
