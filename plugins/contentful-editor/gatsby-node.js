@@ -1,8 +1,11 @@
 const contentful = require('contentful-management')
-const contentfulConfig = require('../../.contentful.json').production
+const contentfulConfig = {
+  managementToken: process.env['CONTENTFUL_MANAGEMENT_ACCESS_TOKEN'],
+  spaceId: process.env['SPACE_ID']
+}
 
 const client = contentful.createClient({
-  accessToken: process.env['CONTENTFUL_MANAGEMENT_ACCESS_TOKEN'] || contentfulConfig.managementToken
+  accessToken: contentfulConfig.managementToken
 })
 
 module.exports = {
