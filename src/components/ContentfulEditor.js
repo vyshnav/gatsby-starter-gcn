@@ -37,6 +37,25 @@ const Modal = styled.div`
     }
   }
 `
+
+const saveAndPublish = ({ cmaToken, fieldData, editorConfig }) => {
+  const { spaceId, entityId } = editorConfig
+  const client = contentful.createClient({
+    accessToken: cmaToken
+  })
+
+  return client.getSpace(spaceId).then((space) => {
+    return space.getEntry(entityId)
+  }).then((entry) => {
+    for (const field of fieldData) {
+      entry.fields[field.id]['en-US'] = field.content
+    }
+    return entry.update()
+  }).then((updatedEntry) => {
+    return updatedEntry.publish()
+  })
+}
+
 class EditModal extends React.Component {
   constructor (props) {
     super(props)
@@ -88,30 +107,18 @@ class EditModal extends React.Component {
 
   submitChanges = (event) => {
     event.preventDefault()
+
     this.setState({
       errorMessage: null
     })
 
-
     const {
-      spaceId,
-      entityId
-    } = this.state.editorConfig
+      cmaToken,
+      fieldData,
+      editorConfig
+    } = this.state
 
-    const client = contentful.createClient({
-      accessToken: this.state.cmaToken
-    })
-
-    client.getSpace(spaceId).then((space) => {
-      return space.getEntry(entityId)
-    }).then((entry) => {
-      for (const field of this.state.fieldData) {
-        entry.fields[field.id]['en-US'] = field.content
-      }
-      return entry.update()
-    }).then((updatedEntry) => {
-      return updatedEntry.publish()
-    }).catch((err) => {
+    saveAndPublish({ cmaToken, fieldData, editorConfig }).catch((err) => {
       this.setState({
         errorMessage: err.toString()
       })
@@ -120,13 +127,27 @@ class EditModal extends React.Component {
 
   render() {
     const { closeModal } = this.props
-    
+
 
     const editors = this.state.fieldData.map((field) => {
       if (field.type === 'Text') {
-        return <textarea onChange={(evt) => this.setField(field.id, evt.target.value)} value={field.content} key={field.id}></textarea>
+        return (
+          <textarea
+            key={field.id}
+            value={field.content}
+            onChange={(evt) => this.setField(field.id, evt.target.value)}
+          />
+        )
       }
-      return <input onChange={(evt) => this.setField(field.id, evt.target.value)} type="text" value={field.content} key={field.id}/>
+
+      return (
+        <input
+          key={field.id}
+          type="text"
+          value={field.content}
+          onChange={(evt) => this.setField(field.id, evt.target.value)}
+        />
+      )
     })
 
     return (
@@ -144,14 +165,19 @@ class EditModal extends React.Component {
 }
 const EditOverlay = styled.div`
   position: relative;
-
-  span.edit-button {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 999
-  }
 `
+const EditButtonSpan = styled.span`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 999;
+`
+
+const EditButton = ({ onClick }) => (
+  <EditButtonSpan>
+    <button onClick={onClick}>Edit</button>
+  </EditButtonSpan>
+)
 
 class ContentfulEditor extends React.Component {
   constructor() {
@@ -175,14 +201,28 @@ class ContentfulEditor extends React.Component {
 
   render() {
     const { contentfulEditor, children, entityData } = this.props
+    const { showModal } = this.state
+    const showEditButton = this.context.router.route.location.hash.includes('edit')
     return (
       <EditOverlay>
-        <span className='edit-button'><button onClick={this.editComponent} >Edit</button></span>
-        {this.state.showModal ? <EditModal closeModal={this.closeModal} editorConfig={contentfulEditor} entityData={entityData}></EditModal> : undefined}
+        {showEditButton && (
+          <EditButton onClick={this.editComponent} />
+        )}
+        {showModal && (
+          <EditModal
+            closeModal={this.closeModal}
+            editorConfig={contentfulEditor}
+            entityData={entityData}
+          />
+        )}
         {children}
       </EditOverlay>
     )
   }
+}
+
+ContentfulEditor.contextTypes = {
+  router: () => null
 }
 
 export default ContentfulEditor
