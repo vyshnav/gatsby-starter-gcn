@@ -50,59 +50,75 @@ module.exports = {
             },
         },
         'gatsby-plugin-offline',
-        {
-            resolve: `gatsby-plugin-feed`,
-            options: {
-              query: `
-                {
-                  site {
-                    siteMetadata {
+         {
+                resolve: 'gatsby-plugin-feed',
+                options: {
+                  setup(ref) {
+                    const ret = ref.query.site.siteMetadata.rssMetadata
+                    ret.allMarkdownRemark = ref.query.allMarkdownRemark
+                    ret.generator = 'Techie Bro - tech news'
+                    return ret
+                  },
+                  query: `
+              {
+                site {
+                  siteMetadata {
+                    rssMetadata {
+                      site_url
+                      feed_url
                       title
                       description
-                      siteUrl
-                      site_url: siteUrl
+                      image_url
+                      author
+                      copyright
                     }
                   }
                 }
-              `,
-              feeds: [
-                {
-                  serialize: ({ query: { site, allMarkdownRemark } }) => {
-                    return allMarkdownRemark.edges.map(edge => {
-                      return Object.assign({}, edge.node.frontmatter, {
-                        description: edge.node.excerpt,
-                        url: site.siteMetadata.siteUrl + edge.node.fields.slug,
-                        guid: site.siteMetadata.siteUrl + edge.node.fields.slug,
-                        custom_elements: [{ "content:encoded": edge.node.html }],
-                      });
-                    });
-                  },
-                  query: `
+              }
+            `,
+                  feeds: [
                     {
-                      allMarkdownRemark(
-                        limit: 1000,
-                        sort: { order: DESC, fields: [frontmatter___date] },
-                        filter: {frontmatter: { draft: { ne: true } }}
-                      ) {
-                        edges {
-                          node {
-                            excerpt
-                            html
-                            fields { slug }
-                            frontmatter {
-                              title
-                              date
-                            }
-                          }
-                        }
-                      }
-                    }
-                  `,
-                  output: "/rss.xml",
+                      serialize(ctx) {
+                        const rssMetadata = ctx.query.site.siteMetadata.rssMetadata
+                        return ctx.query.allContentfulPost.edges.map(edge => ({
+                          date: edge.node.publishDate,
+                          title: edge.node.title,
+                          description: edge.node.body.childMarkdownRemark.excerpt,
+
+                          url: rssMetadata.site_url + '/' + edge.node.slug,
+                          guid: rssMetadata.site_url + '/' + edge.node.slug,
+                          custom_elements: [
+                            {
+                              'content:encoded': edge.node.body.childMarkdownRemark.html,
+                            },
+                          ],
+                        }))
+                      },
+                      query: `
+                        {
+                      allContentfulPost(limit: 1000, sort: {fields: [publishDate], order: DESC}) {
+                         edges {
+                           node {
+                             title
+                             slug
+                             publishDate(formatString: "MMMM DD, YYYY")
+                             body {
+                               childMarkdownRemark {
+                                 html
+                                 excerpt(pruneLength: 80)
+                               }
+                             }
+                           }
+                         }
+                       }
+                     }
+                `,
+                      output: '/rss.xml',
+                    },
+                  ],
                 },
-              ],
-            },
-          },
+              },
+
         {
             resolve: `gatsby-plugin-sitemap`
         },
