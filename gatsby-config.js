@@ -17,6 +17,15 @@ module.exports = {
         description: config.siteDescription,
         siteUrl: config.siteUrl,
         pathPrefix: config.pathPrefix,
+        rssMetadata: {
+            site_url: config.siteUrl,
+            feed_url: `${config.siteUrl}/rss.xml`,
+            title: config.siteTitle,
+            description: config.siteDescription,
+            image_url: `${config.siteUrl}${config.siteLogo}`,
+            author: config.author,
+            copyright: config.copyright,
+        },
         facebook: {
             appId: process.env.FB_APP_ID ? process.env.FB_APP_ID : ""
         }
@@ -50,16 +59,16 @@ module.exports = {
             },
         },
         'gatsby-plugin-offline',
-         {
-                resolve: 'gatsby-plugin-feed',
-                options: {
-                  setup(ref) {
+        {
+            resolve: 'gatsby-plugin-feed',
+            options: {
+                setup(ref) {
                     const ret = ref.query.site.siteMetadata.rssMetadata
                     ret.allMarkdownRemark = ref.query.allMarkdownRemark
                     ret.generator = 'Techie Bro - tech news'
                     return ret
-                  },
-                  query: `
+                },
+                query: `
               {
                 site {
                   siteMetadata {
@@ -76,25 +85,22 @@ module.exports = {
                 }
               }
             `,
-                  feeds: [
-                    {
-                      serialize(ctx) {
+                feeds: [{
+                    serialize(ctx) {
                         const rssMetadata = ctx.query.site.siteMetadata.rssMetadata
                         return ctx.query.allContentfulPost.edges.map(edge => ({
-                          date: edge.node.publishDate,
-                          title: edge.node.title,
-                          description: edge.node.body.childMarkdownRemark.excerpt,
+                            date: edge.node.publishDate,
+                            title: edge.node.title,
+                            description: edge.node.body.childMarkdownRemark.excerpt,
 
-                          url: rssMetadata.site_url + '/' + edge.node.slug,
-                          guid: rssMetadata.site_url + '/' + edge.node.slug,
-                          custom_elements: [
-                            {
-                              'content:encoded': edge.node.body.childMarkdownRemark.html,
-                            },
-                          ],
+                            url: rssMetadata.site_url + '/' + edge.node.slug,
+                            guid: rssMetadata.site_url + '/' + edge.node.slug,
+                            custom_elements: [{
+                                'content:encoded': edge.node.body.childMarkdownRemark.html,
+                            }, ],
                         }))
-                      },
-                      query: `
+                    },
+                    query: `
                         {
                       allContentfulPost(limit: 1000, sort: {fields: [publishDate], order: DESC}) {
                          edges {
@@ -113,11 +119,10 @@ module.exports = {
                        }
                      }
                 `,
-                      output: '/rss.xml',
-                    },
-                  ],
-                },
-              },
+                    output: '/rss.xml',
+                }, ],
+            },
+        },
 
         {
             resolve: `gatsby-plugin-sitemap`
